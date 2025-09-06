@@ -1,9 +1,7 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import axiosInstance from "../api/axiosInstance";
 
 const AuthForm: React.FC = () => {
-  const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
   const [form, setForm] = useState({
     username: "",
@@ -30,8 +28,6 @@ const AuthForm: React.FC = () => {
           password: form.password,
         });
         setSuccess(res.data.message);
-        // Redirect to dashboard after successful login
-        setTimeout(() => navigate("/dashboard"), 1500);
       } else {
         const res = await axiosInstance.post("/auth/register", {
           username: form.username,
@@ -39,8 +35,6 @@ const AuthForm: React.FC = () => {
           password: form.password,
         });
         setSuccess(res.data.message);
-        // Redirect to dashboard after successful registration
-        setTimeout(() => navigate("/dashboard"), 1500);
       }
     } catch (err: any) {
       setError(err.response?.data?.message || "Something went wrong");

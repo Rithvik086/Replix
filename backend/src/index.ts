@@ -16,7 +16,11 @@ connectDB();
 
 // Middlewares
 app.use(cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+    origin: [
+        "http://localhost:3000",
+        "http://localhost:5173",
+        process.env.FRONTEND_URL || ""
+    ].filter(url => url && url.length > 0),
     credentials: true
 }));
 app.use(express.json());
