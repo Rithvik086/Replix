@@ -29,14 +29,23 @@ export const initWhatsApp = async () => {
     // Handle incoming messages
     client.on("message", async (message: Message) => {
         console.log(`📩 Message from ${message.from}: ${message.body}`);
-        const reply = await getAutoReply(message.body);  // async call
+
+        // Check if it's a group chat (group IDs end with @g.us)
+        const isGroup = message.from.endsWith('@g.us');
+
+        if (isGroup) {
+            console.log(`🚫 Ignoring group message from ${message.from}`);
+            return; // Don't reply to group messages
+        }
+
+        // Only reply to direct messages (individual chats end with @c.us)
+        console.log(`💬 Processing DM from ${message.from}`);
+        const reply = await getAutoReply(message.body);
         if (reply) {
             await message.reply(reply);
             console.log(`🤖 Replied: ${reply}`);
         }
     });
-
-
     // Handle disconnected
     client.on("disconnected", (reason) => {
         console.log("⚠️ WhatsApp disconnected:", reason);
