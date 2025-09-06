@@ -1,0 +1,31 @@
+{
+  "compilerOptions": {
+    /* File Layout */
+    "rootDir": "./src",
+    "outDir": "./dist",
+
+    /* Node.js Environment */
+    "target": "es2020",          
+    "module": "commonjs",        
+    "lib": ["esnext"],           
+    "types": ["node"],          
+
+    /* Module Resolution */
+    "esModuleInterop": true,     
+    "moduleResolution": "node", 
+    "skipLibCheck": true,
+
+    /* Strictness */
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+
+    /* Safety */
+    "noImplicitReturns": true,
+    "noUnusedLocals": true,
+    
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
+}

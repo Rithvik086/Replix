@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp QR Connect</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin-top: 40px; }
+        #status { font-size: 1.2em; margin-bottom: 20px; }
+        #qr { margin: 20px auto; }
+        #refresh { margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>WhatsApp Connection</h1>
+    <div id="status">Loading status...</div>
+    <div id="qr"></div>
+    <button id="refresh">Refresh QR</button>
+    <script>
+        async function fetchStatus() {
+            const res = await fetch('http://localhost:5000/status');
+            const data = await res.json();
+            document.getElementById('status').textContent = 'Status: ' + data.status;
+        }
+        async function fetchQR() {
+            const res = await fetch('http://localhost:5000/qr');
+            const data = await res.json();
+            const qrDiv = document.getElementById('qr');
+            qrDiv.innerHTML = '';
+            if (data.qr) {
+                const img = document.createElement('img');
+                img.src = data.qr;
+                img.alt = 'WhatsApp QR Code';
+                img.width = 300;
+                qrDiv.appendChild(img);
+            } else {
+                qrDiv.textContent = 'QR code not generated yet.';
+            }
+        }
+        document.getElementById('refresh').onclick = () => {
+            fetchQR();
+            fetchStatus();
+        };
+        // Initial load
+        fetchStatus();
+        fetchQR();
+        // Poll status every 5 seconds
+        setInterval(fetchStatus, 5000);
+    </script>
+</body>
+</html>
