@@ -3,3 +3,4 @@
 /backend/dist
 /backend/.wwebjs_auth/
 /backend/.wwebjs_cache
+node_modules
