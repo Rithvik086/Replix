@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { Link } from "react-router-dom";
 import axiosInstance from "../api/axiosInstance";
 import MessagesLog from "./MessagesLog";
 
@@ -13,6 +14,9 @@ const Dashboard: React.FC = () => {
   const statusRef = useRef(status);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [botEnabled, setBotEnabled] = useState<boolean | null>(null);
+  const [sleepStart, setSleepStart] = useState<string | null>(null);
+  const [sleepEnd, setSleepEnd] = useState<string | null>(null);
 
   const fetchQrCode = async () => {
     try {
@@ -32,6 +36,24 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  const fetchSettings = async () => {
+    try {
+      const res = await axiosInstance.get("/settings");
+      const s = res.data?.settings;
+      if (s) {
+        setBotEnabled(Boolean(s.botEnabled));
+        setSleepStart(s.sleepStart ?? null);
+        setSleepEnd(s.sleepEnd ?? null);
+      }
+    } catch (err) {
+      // ignore settings errors (e.g., unauthenticated) but keep state null
+      console.debug("Could not load settings:", err);
+      setBotEnabled(null);
+      setSleepStart(null);
+      setSleepEnd(null);
+    }
+  };
+
   useEffect(() => {
     statusRef.current = status;
   }, [status]);
@@ -39,7 +61,7 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      await Promise.all([fetchQrCode(), fetchStatus()]);
+      await Promise.all([fetchQrCode(), fetchStatus(), fetchSettings()]);
       setLoading(false);
     };
 
@@ -69,6 +91,30 @@ const Dashboard: React.FC = () => {
       : s === "qr_generated"
       ? "🟡 QR Ready"
       : "🔴 Not Connected";
+
+  const nowIsSleeping = (start?: string | null, end?: string | null) => {
+    try {
+      if (!start || !end) return false;
+      const now = new Date();
+      const pad = (n: number) => n.toString().padStart(2, "0");
+      const hhmm = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+      if (start < end) return hhmm >= start && hhmm < end;
+      return hhmm >= start || hhmm < end;
+    } catch (e) {
+      return false;
+    }
+  };
+
+  const getBotBadge = () => {
+    if (botEnabled === null)
+      return { text: "Unknown", classes: "text-gray-600 bg-gray-100" };
+    const sleeping = nowIsSleeping(sleepStart, sleepEnd);
+    if (!botEnabled)
+      return { text: "Disabled", classes: "text-red-600 bg-red-50" };
+    if (sleeping)
+      return { text: "Sleeping", classes: "text-yellow-700 bg-yellow-50" };
+    return { text: "Active", classes: "text-green-600 bg-green-50" };
+  };
 
   const handleLogout = async () => {
     try {
@@ -152,6 +198,17 @@ const Dashboard: React.FC = () => {
           <div>
             <h1 className="text-4xl font-extrabold text-gray-900">Replix</h1>
             <p className="text-sm text-gray-500">WhatsApp bot dashboard</p>
+            <div className="mt-2">
+              Bot status :{"  "}
+              <span
+            
+                className={`inline-flex items-center px-2 py-1 rounded-md text-sm font-medium border ${
+                  getBotBadge().classes
+                }`}
+              >
+                {getBotBadge().text}
+              </span>
+            </div>
           </div>
 
           <div className="flex items-center gap-3">
@@ -159,6 +216,32 @@ const Dashboard: React.FC = () => {
               <div className="text-sm text-gray-500">Signed in as</div>
               <div className="text-sm font-medium text-gray-800">Admin</div>
             </div>
+            <Link
+              to="/settings"
+              className="inline-flex items-center gap-2 px-3 py-2 bg-white border rounded shadow-sm hover:bg-gray-50 text-sm"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4 text-gray-600"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2-1.343-2-3-2z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06A2 2 0 015.29 17.9l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09c.7 0 1.3-.41 1.51-1a1.65 1.65 0 00-.33-1.82L4.31 5.29A2 2 0 017.14 2.46l.06.06A1.65 1.65 0 009 2.79c.7 0 1.3.41 1.51 1H12c.7 0 1.3-.41 1.51-1 .17-.42.57-.73 1.02-.79.44-.06.88.07 1.2.35l.06.06a2 2 0 002.83 0l.06-.06a1.65 1.65 0 001.82-.33l.06-.06A2 2 0 0120.71 6.1l-.06.06a1.65 1.65 0 00-.33 1.82c.2.59.8 1 1.51 1H21a2 2 0 010 4h-.09c-.7 0-1.3.41-1.51 1z"
+                />
+              </svg>
+              <span className="text-sm text-gray-700">Settings</span>
+            </Link>
             <button
               onClick={handleLogout}
               className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"

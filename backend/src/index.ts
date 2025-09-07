@@ -5,6 +5,7 @@ import cookieParser from "cookie-parser";
 import connectDB from "./config/database";
 import authRoutes from "./routes/auth";
 import messagesRoutes from "./routes/messages";
+import settingsRoutes from "./routes/settings";
 import Message from './models/Message';
 import { initWhatsApp, getQrCode, getStatus } from "./whatsapp";
 
@@ -31,6 +32,7 @@ app.use(cookieParser());
 // Routes
 app.use("/auth", authRoutes);
 app.use("/messages", messagesRoutes);
+app.use("/settings", settingsRoutes);
 
 // Health check
 app.get("/", (_req: Request, res: Response) => {
