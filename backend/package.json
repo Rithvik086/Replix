@@ -29,7 +29,8 @@
     "qrcode-reader": "^1.0.4",
     "qrcode-terminal": "^0.12.0",
     "socket.io": "^4.8.1",
-    "whatsapp-web.js": "^1.33.3"
+    "whatsapp-web.js": "^1.33.3",
+    "zod": "^4.1.5"
   },
   "devDependencies": {
     "@types/express": "^5.0.3",

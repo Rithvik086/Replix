@@ -4,6 +4,8 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import connectDB from "./config/database";
 import authRoutes from "./routes/auth";
+import messagesRoutes from "./routes/messages";
+import Message from './models/Message';
 import { initWhatsApp, getQrCode, getStatus } from "./whatsapp";
 
 dotenv.config();
@@ -28,6 +30,7 @@ app.use(cookieParser());
 
 // Routes
 app.use("/auth", authRoutes);
+app.use("/messages", messagesRoutes);
 
 // Health check
 app.get("/", (_req: Request, res: Response) => {
@@ -52,5 +55,16 @@ app.get("/status", (_req: Request, res: Response) => {
 // Start server
 app.listen(PORT, async () => {
     console.log(`✅ Server running at http://localhost:${PORT}`);
+    // ensure indexes for messages
+    try {
+        const ttlDays = Number(process.env.MESSAGE_TTL_DAYS ?? 30);
+        await Message.collection.createIndex({ timestamp: 1 }, { expireAfterSeconds: ttlDays * 24 * 60 * 60 });
+        await Message.collection.createIndex({ chatId: 1, timestamp: -1 });
+        await Message.collection.createIndex({ direction: 1 });
+        console.log(`Indexes created (TTL ${ttlDays} days)`);
+    } catch (e) {
+        console.error('Failed to create message indexes:', e);
+    }
+
     await initWhatsApp();
 });
