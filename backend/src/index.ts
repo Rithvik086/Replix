@@ -1,4 +1,4 @@
-import express, { Request, Response } from "express";
+import express, { Request, Response, NextFunction } from "express";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import dotenv from "dotenv";
@@ -21,14 +21,31 @@ const PORT = process.env.PORT || 5000;
 connectDB();
 
 // Middlewares
-app.use(cors({
-    origin: [
-        "http://localhost:3000",
-        "http://localhost:5173",
-        process.env.FRONTEND_URL || ""
-    ].filter(url => url && url.length > 0),
-    credentials: true
-}));
+const allowedOrigins = [
+    "http://localhost:3000",
+    "http://localhost:5173",
+    ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : [])
+].filter(Boolean);
+
+// Custom CORS handler that ensures preflight responses include the right headers
+app.use((req: Request, res: Response, next: NextFunction) => {
+    const origin = req.headers.origin as string | undefined;
+    if (origin && allowedOrigins.includes(origin)) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+        res.setHeader('Access-Control-Allow-Credentials', 'true');
+        res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    }
+    if (req.method === 'OPTIONS') {
+        // Always respond to preflight requests
+        res.sendStatus(204);
+        return;
+    }
+    next();
+});
+
+// Keep express cors middleware for convenience (uses the same allowedOrigins)
+app.use(cors({ origin: allowedOrigins, credentials: true, optionsSuccessStatus: 204 }));
 app.use(express.json());
 app.use(cookieParser());
 
