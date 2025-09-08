@@ -34,8 +34,9 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     if (origin && allowedOrigins.includes(origin)) {
         res.setHeader('Access-Control-Allow-Origin', origin);
         res.setHeader('Access-Control-Allow-Credentials', 'true');
-        res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
-        res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
+    // include Cookie so browser preflight knows cookies may be used
+    res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cookie');
     }
     if (req.method === 'OPTIONS') {
         // Always respond to preflight requests
@@ -128,12 +129,7 @@ if (process.env.ENABLE_DEBUG === 'true') {
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
     cors: {
-        origin: [
-            "http://localhost:3000",
-            "http://localhost:5173",
-
-            process.env.FRONTEND_URL || ""
-        ].filter(url => url && url.length > 0),
+    origin: allowedOrigins,
         credentials: true
     }
 });
@@ -152,6 +148,10 @@ export { io };
 
 httpServer.listen(PORT, async () => {
     console.log(`✅ Server running at http://localhost:${PORT}`);
+    console.log('🔗 Allowed CORS origins:', allowedOrigins);
+    if (process.env.NODE_ENV === 'production' && !process.env.FRONTEND_URL) {
+        console.warn('⚠️ NODE_ENV=production but FRONTEND_URL is not set — CORS may block your frontend. Set FRONTEND_URL to your Vercel origin.');
+    }
 
     // Set socket.io instance for whatsapp module
     setSocketIO(io);
