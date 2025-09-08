@@ -7,6 +7,9 @@ import axios from "axios";
 import fs from 'fs';
 import path from 'path';
 
+// Helper to get a Date adjusted to IST (Asia/Kolkata) for logging and time checks
+const toIST = (d: Date = new Date()) => new Date(d.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+
 // Import io from index.ts (will be available after server starts)
 let io: any = null;
 
@@ -162,11 +165,11 @@ export const initWhatsApp = async () => {
                 console.log(`💬 Processing personal message from ${message.from}`);
             }
 
-            // Sleep window check (simple local time HH:MM)
-            if (settings?.sleepStart && settings?.sleepEnd) {
-                const now = new Date();
-                const pad = (n: number) => n.toString().padStart(2, '0');
-                const hhmm = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+                // Sleep window check (IST local time HH:MM)
+                if (settings?.sleepStart && settings?.sleepEnd) {
+                    const istNow = toIST();
+                    const pad = (n: number) => n.toString().padStart(2, '0');
+                    const hhmm = `${pad(istNow.getHours())}:${pad(istNow.getMinutes())}`;
                 const start = settings.sleepStart;
                 const end = settings.sleepEnd;
 
@@ -180,7 +183,7 @@ export const initWhatsApp = async () => {
                 }
 
                 if (inSleep) {
-                    console.log(`🌙 Current time ${hhmm} is within sleep window ${start} - ${end} — skipping reply`);
+                    console.log(`🌙 Current time (IST) ${hhmm} is within sleep window ${start} - ${end} — skipping reply`);
                     return;
                 }
             }

@@ -14,6 +14,9 @@ interface RuleResult {
     useAI: boolean;
 }
 
+// Helper to get a Date adjusted to IST (Asia/Kolkata) for logging and time checks
+const toIST = (d: Date = new Date()) => new Date(d.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+
 // Check if a message matches rule conditions
 const checkConditions = (conditions: IRule['conditions'], context: MessageContext): boolean => {
     // All conditions must be true (AND logic)
@@ -58,12 +61,13 @@ const checkKeywordCondition = (condition: any, messageBody: string): boolean => 
 
 // Check time-based conditions
 const checkTimeCondition = (condition: any, timestamp: Date): boolean => {
-    const now = new Date();
-    const currentHour = now.getHours();
-    const currentMinute = now.getMinutes();
-    const currentTime = currentHour * 60 + currentMinute; // Minutes since midnight
+    // Use IST (Asia/Kolkata) for human-facing logs and checks so times align with IST users
+    const istNow = toIST();
+    const currentHour = istNow.getHours();
+    const currentMinute = istNow.getMinutes();
+    const currentTime = currentHour * 60 + currentMinute; // Minutes since midnight (IST)
 
-    console.log(`🕐 Current time: ${currentHour}:${currentMinute.toString().padStart(2, '0')} (${currentTime} minutes)`);
+    console.log(`🕐 Current time (IST): ${currentHour}:${currentMinute.toString().padStart(2, '0')} (${currentTime} minutes) — Asia/Kolkata`);
 
     if (condition.operator === 'between' && Array.isArray(condition.value) && condition.value.length === 2) {
         const [startTime, endTime] = condition.value;
