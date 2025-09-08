@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import axiosInstance from "../api/axiosInstance";
 import MessagesLog from "./MessagesLog";
+import RealTimeChat from "./RealTimeChat";
 
 type WhatsAppStatus = {
   status: "not_connected" | "qr_generated" | "connected";
@@ -154,6 +155,7 @@ const Dashboard: React.FC = () => {
   // retention UI
   const [retentionPreset, setRetentionPreset] = useState<string>("1_day");
   const [actionMsg, setActionMsg] = useState<string>("");
+  const [activeTab, setActiveTab] = useState<'messages' | 'chat'>('messages');
   // persona feature removed
 
   const humanLabel = (key: string) => {
@@ -363,7 +365,34 @@ const Dashboard: React.FC = () => {
           </div>
 
           <div className="col-span-1 lg:col-span-2">
-            <MessagesLog />
+            {/* Tab Navigation */}
+            <div className="bg-white rounded-2xl shadow p-4 border border-gray-100 mb-6">
+              <div className="flex space-x-1">
+                <button
+                  onClick={() => setActiveTab('messages')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium ${
+                    activeTab === 'messages'
+                      ? 'bg-indigo-100 text-indigo-700'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  📋 Message Logs
+                </button>
+                <button
+                  onClick={() => setActiveTab('chat')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium ${
+                    activeTab === 'chat'
+                      ? 'bg-indigo-100 text-indigo-700'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  💬 Real-Time Chat
+                </button>
+              </div>
+            </div>
+
+            {/* Tab Content */}
+            {activeTab === 'messages' ? <MessagesLog /> : <RealTimeChat />}
           </div>
         </div>
       </div>

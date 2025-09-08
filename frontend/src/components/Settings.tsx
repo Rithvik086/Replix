@@ -6,6 +6,8 @@ const Settings: React.FC = () => {
   const [botEnabled, setBotEnabled] = useState(true);
   const [sleepStart, setSleepStart] = useState("23:00");
   const [sleepEnd, setSleepEnd] = useState("07:00");
+  const [replyToPersonalChats, setReplyToPersonalChats] = useState(true);
+  const [replyToGroupChats, setReplyToGroupChats] = useState(false);
   const [message, setMessage] = useState("");
   const [original, setOriginal] = useState<any>(null);
 
@@ -18,10 +20,14 @@ const Settings: React.FC = () => {
         setBotEnabled(Boolean(s.botEnabled));
         setSleepStart(s.sleepStart ?? "23:00");
         setSleepEnd(s.sleepEnd ?? "07:00");
+        setReplyToPersonalChats(Boolean(s.replyToPersonalChats ?? true));
+        setReplyToGroupChats(Boolean(s.replyToGroupChats ?? false));
         setOriginal({
           botEnabled: Boolean(s.botEnabled),
           sleepStart: s.sleepStart ?? "23:00",
           sleepEnd: s.sleepEnd ?? "07:00",
+          replyToPersonalChats: Boolean(s.replyToPersonalChats ?? true),
+          replyToGroupChats: Boolean(s.replyToGroupChats ?? false),
         });
       }
     } catch (err: any) {
@@ -42,10 +48,12 @@ const Settings: React.FC = () => {
         botEnabled,
         sleepStart,
         sleepEnd,
+        replyToPersonalChats,
+        replyToGroupChats,
       });
       if (res.data?.success) {
         setMessage("Saved");
-        setOriginal({ botEnabled, sleepStart, sleepEnd });
+        setOriginal({ botEnabled, sleepStart, sleepEnd, replyToPersonalChats, replyToGroupChats });
       } else setMessage("Failed to save");
     } catch (err: any) {
       setMessage(err?.response?.data?.message || "Failed to save");
@@ -58,6 +66,8 @@ const Settings: React.FC = () => {
       setBotEnabled(original.botEnabled);
       setSleepStart(original.sleepStart);
       setSleepEnd(original.sleepEnd);
+      setReplyToPersonalChats(original.replyToPersonalChats);
+      setReplyToGroupChats(original.replyToGroupChats);
       setMessage("Reverted");
       setTimeout(() => setMessage(""), 1500);
     }
@@ -138,34 +148,77 @@ const Settings: React.FC = () => {
           </div>
 
           <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="col-span-1">
-              <label className="block text-sm font-medium text-gray-700">
-                Bot Enabled
-              </label>
-              <div className="mt-3">
-                <button
-                  onClick={() => setBotEnabled(true)}
-                  className={`px-4 py-2 rounded-l-md border ${
-                    botEnabled
-                      ? "bg-indigo-600 text-white border-indigo-600"
-                      : "bg-white text-gray-700 border-gray-200"
-                  }`}
-                >
-                  On
-                </button>
-                <button
-                  onClick={() => setBotEnabled(false)}
-                  className={`px-4 py-2 rounded-r-md border ${
-                    !botEnabled
-                      ? "bg-red-600 text-white border-red-600"
-                      : "bg-white text-gray-700 border-gray-200"
-                  }`}
-                >
-                  Off
-                </button>
+            <div className="col-span-1 space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Bot Enabled
+                </label>
+                <div className="mt-3">
+                  <button
+                    onClick={() => setBotEnabled(true)}
+                    className={`px-4 py-2 rounded-l-md border ${
+                      botEnabled
+                        ? "bg-indigo-600 text-white border-indigo-600"
+                        : "bg-white text-gray-700 border-gray-200"
+                    }`}
+                  >
+                    On
+                  </button>
+                  <button
+                    onClick={() => setBotEnabled(false)}
+                    className={`px-4 py-2 rounded-r-md border ${
+                      !botEnabled
+                        ? "bg-red-600 text-white border-red-600"
+                        : "bg-white text-gray-700 border-gray-200"
+                    }`}
+                  >
+                    Off
+                  </button>
+                </div>
               </div>
 
-              <div className="mt-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Reply To Chat Types
+                </label>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Personal Chats</span>
+                    <button
+                      onClick={() => setReplyToPersonalChats(!replyToPersonalChats)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        replyToPersonalChats ? 'bg-indigo-600' : 'bg-gray-200'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          replyToPersonalChats ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Group Chats</span>
+                    <button
+                      onClick={() => setReplyToGroupChats(!replyToGroupChats)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        replyToGroupChats ? 'bg-indigo-600' : 'bg-gray-200'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          replyToGroupChats ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-400 mt-2">
+                  Control which types of chats the bot will respond to.
+                </p>
+              </div>
+
+              <div>
                 <label className="block text-sm font-medium text-gray-700">
                   Sleep Window (server local time)
                 </label>
@@ -221,10 +274,30 @@ const Settings: React.FC = () => {
                 </div>
 
                 <div className="mt-4">
+                  <h4 className="text-xs text-gray-500 uppercase mb-2">
+                    Chat Types
+                  </h4>
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-xs">
+                      <span>Personal Chats</span>
+                      <span className={`px-2 py-1 rounded ${replyToPersonalChats ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                        {replyToPersonalChats ? 'Enabled' : 'Disabled'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span>Group Chats</span>
+                      <span className={`px-2 py-1 rounded ${replyToGroupChats ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                        {replyToGroupChats ? 'Enabled' : 'Disabled'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4">
                   <h4 className="text-xs text-gray-500 uppercase">
                     Quick actions
                   </h4>
-                  <div className="mt-2 flex gap-2">
+                  <div className="mt-2 flex gap-2 flex-wrap">
                     <button
                       onClick={() => {
                         setBotEnabled(false);
@@ -245,13 +318,13 @@ const Settings: React.FC = () => {
                     </button>
                     <button
                       onClick={() => {
-                        setSleepStart("23:00");
-                        setSleepEnd("07:00");
-                        setMessage("Sleep window set");
+                        setReplyToPersonalChats(true);
+                        setReplyToGroupChats(false);
+                        setMessage("Personal chats only");
                       }}
-                      className="px-3 py-1 bg-gray-100 text-gray-700 rounded text-sm"
+                      className="px-3 py-1 bg-blue-50 text-blue-700 rounded text-sm"
                     >
-                      Set night window
+                      Personal only
                     </button>
                   </div>
                 </div>

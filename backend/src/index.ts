@@ -1,4 +1,6 @@
 import express, { Request, Response } from "express";
+import { createServer } from "http";
+import { Server } from "socket.io";
 import dotenv from "dotenv";
 import cors from "cors";
 import cookieParser from "cookie-parser";
@@ -7,7 +9,7 @@ import authRoutes from "./routes/auth";
 import messagesRoutes from "./routes/messages";
 import settingsRoutes from "./routes/settings";
 import Message from './models/Message';
-import { initWhatsApp, getQrCode, getStatus } from "./whatsapp";
+import { initWhatsApp, getQrCode, getStatus, setSocketIO, sendManualMessage } from "./whatsapp";
 
 dotenv.config();
 
@@ -54,9 +56,54 @@ app.get("/status", (_req: Request, res: Response) => {
     res.json({ status: getStatus() });
 });
 
+// Send manual message
+app.post("/send-message", async (req: Request, res: Response) => {
+    try {
+        const { to, message } = req.body;
+        
+        if (!to || !message) {
+            res.status(400).json({ success: false, message: "Missing 'to' or 'message' field" });
+            return;
+        }
+
+        const result = await sendManualMessage(to, message);
+        res.json({ success: true, data: result });
+    } catch (error: any) {
+        res.status(500).json({ success: false, message: error.message || "Failed to send message" });
+    }
+});
+
 // Start server
-app.listen(PORT, async () => {
+const httpServer = createServer(app);
+const io = new Server(httpServer, {
+    cors: {
+        origin: [
+            "http://localhost:3000",
+            "http://localhost:5173",
+            process.env.FRONTEND_URL || ""
+        ].filter(url => url && url.length > 0),
+        credentials: true
+    }
+});
+
+// Socket.IO connection handling
+io.on('connection', (socket) => {
+    console.log('🔌 Client connected:', socket.id);
+    
+    socket.on('disconnect', () => {
+        console.log('🔌 Client disconnected:', socket.id);
+    });
+});
+
+// Export io for use in other modules
+export { io };
+
+httpServer.listen(PORT, async () => {
     console.log(`✅ Server running at http://localhost:${PORT}`);
+    
+    // Set socket.io instance for whatsapp module
+    setSocketIO(io);
+    
     // ensure indexes for messages
     try {
         const ttlDays = Number(process.env.MESSAGE_TTL_DAYS ?? 30);

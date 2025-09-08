@@ -3,6 +3,14 @@ import MessageModel from './models/Message';
 import SettingsModel from './models/Settings';
 import qrcode from "qrcode";
 import axios from "axios";
+
+// Import io from index.ts (will be available after server starts)
+let io: any = null;
+
+// Function to set io instance
+export const setSocketIO = (socketIO: any) => {
+    io = socketIO;
+};
 // WhatsApp client instance
 let client: Client;
 let qrCode: string | null = null;
@@ -40,6 +48,33 @@ export const initWhatsApp = async () => {
     client.on("ready", () => {
         console.log("✅ WhatsApp is connected!");
         connectionStatus = "connected";
+        
+        // Emit connection status to frontend
+        if (io) {
+            io.emit('whatsapp:status', { status: connectionStatus });
+        }
+    });
+
+    // Handle disconnection
+    client.on("disconnected", (reason) => {
+        console.log(`❌ WhatsApp disconnected: ${reason}`);
+        connectionStatus = "not_connected";
+        
+        // Emit connection status to frontend
+        if (io) {
+            io.emit('whatsapp:status', { status: connectionStatus, reason });
+        }
+    });
+
+    // Handle authentication failure
+    client.on("auth_failure", (message) => {
+        console.error(`🚫 WhatsApp authentication failed: ${message}`);
+        connectionStatus = "not_connected";
+        
+        // Emit connection status to frontend
+        if (io) {
+            io.emit('whatsapp:status', { status: connectionStatus, error: message });
+        }
     });
 
     // Handle incoming messages
@@ -49,21 +84,33 @@ export const initWhatsApp = async () => {
         // Check if it's a group chat (group IDs end with @g.us)
         const isGroup = message.from.endsWith('@g.us');
 
-        if (isGroup) {
-            console.log(`🚫 Ignoring group message from ${message.from}`);
-            return; // Don't reply to group messages
-        }
-
-        // Only reply to direct messages (individual chats end with @c.us)
-        console.log(`💬 Processing DM from ${message.from}`);
-
-        // Check settings: bot enabled and sleep window
+        // Check settings: bot enabled, sleep window, and chat type preferences
         try {
             const settings = await SettingsModel.findOne();
             const botEnabled = settings ? settings.botEnabled : true;
             if (!botEnabled) {
                 console.log('⛔ Bot is disabled via settings — skipping reply');
                 return;
+            }
+
+            // Check chat type settings
+            const replyToPersonalChats = settings ? settings.replyToPersonalChats : true;
+            const replyToGroupChats = settings ? settings.replyToGroupChats : false;
+
+            if (isGroup && !replyToGroupChats) {
+                console.log(`� Group chat replies disabled — ignoring group message from ${message.from}`);
+                return;
+            }
+
+            if (!isGroup && !replyToPersonalChats) {
+                console.log(`🚫 Personal chat replies disabled — ignoring personal message from ${message.from}`);
+                return;
+            }
+
+            if (isGroup) {
+                console.log(`💬 Processing group message from ${message.from}`);
+            } else {
+                console.log(`💬 Processing personal message from ${message.from}`);
             }
 
             // Sleep window check (simple local time HH:MM)
@@ -104,6 +151,19 @@ export const initWhatsApp = async () => {
                 direction: 'in'
             });
             console.log('[DB] whatsapp saved incoming message', { id: savedIn._id });
+            
+            // Emit real-time event for new message
+            if (io) {
+                io.emit('message:new', {
+                    _id: savedIn._id,
+                    chatId: savedIn.chatId,
+                    from: savedIn.from,
+                    to: savedIn.to,
+                    body: savedIn.body,
+                    direction: savedIn.direction,
+                    timestamp: savedIn.timestamp
+                });
+            }
         } catch (e) {
             console.error('Failed to save incoming message:', e);
         }
@@ -138,11 +198,35 @@ export const initWhatsApp = async () => {
                         direction: 'out'
                     });
                     console.log('[DB] whatsapp saved outgoing reply', { id: savedOut._id });
+                    
+                    // Emit real-time event for bot reply
+                    if (io) {
+                        io.emit('message:new', {
+                            _id: savedOut._id,
+                            chatId: savedOut.chatId,
+                            from: savedOut.from,
+                            to: savedOut.to,
+                            body: savedOut.body,
+                            direction: savedOut.direction,
+                            timestamp: savedOut.timestamp
+                        });
+                    }
                 } catch (saveErr) {
                     console.error('Failed to save outgoing message:', saveErr);
                 }
-            } catch (e) {
+            } catch (e: any) {
                 console.error('Failed to send reply:', e);
+                
+                // Handle session closed errors
+                if (e.message && (e.message.includes('Session closed') || e.message.includes('Protocol error'))) {
+                    console.log('🔄 WhatsApp session closed during message reply, updating connection status');
+                    connectionStatus = "not_connected";
+                    
+                    // Emit connection status update
+                    if (io) {
+                        io.emit('whatsapp:status', { status: connectionStatus });
+                    }
+                }
             }
         } else {
             console.log('\u26a0\ufe0f Skipping reply because client not ready or no reply generated');
@@ -234,3 +318,65 @@ export const getQrCode = () => qrCode;
 
 // Get connection status
 export const getStatus = () => connectionStatus;
+
+// Send manual message from dashboard
+export const sendManualMessage = async (to: string, message: string) => {
+    try {
+        if (!client) {
+            throw new Error("WhatsApp client not initialized");
+        }
+
+        // Check if client is ready and connection is valid
+        const clientState = await client.getState();
+        console.log(`📊 Current WhatsApp client state: ${clientState}`);
+        
+        if (clientState !== 'CONNECTED') {
+            connectionStatus = "not_connected";
+            throw new Error(`WhatsApp client not ready. Current state: ${clientState}`);
+        }
+
+        // Send message via WhatsApp
+        await client.sendMessage(to, message);
+        console.log(`📤 Manual message sent to ${to}: ${message}`);
+
+        // Save to database
+        const savedMessage = await MessageModel.create({
+            user: null,
+            chatId: to,
+            from: 'dashboard',
+            to: to,
+            body: message,
+            direction: 'out'
+        });
+
+        // Emit real-time event
+        if (io) {
+            io.emit('message:new', {
+                _id: savedMessage._id,
+                chatId: savedMessage.chatId,
+                from: savedMessage.from,
+                to: savedMessage.to,
+                body: savedMessage.body,
+                direction: savedMessage.direction,
+                timestamp: savedMessage.timestamp
+            });
+        }
+
+        return { success: true, message: savedMessage };
+    } catch (error: any) {
+        console.error('Failed to send manual message:', error);
+        
+        // Handle session closed errors specifically
+        if (error.message && (error.message.includes('Session closed') || error.message.includes('Protocol error'))) {
+            console.log('🔄 WhatsApp session closed, updating connection status');
+            connectionStatus = "not_connected";
+            
+            // Emit connection status update
+            if (io) {
+                io.emit('whatsapp:status', { status: connectionStatus });
+            }
+        }
+        
+        throw error;
+    }
+};
