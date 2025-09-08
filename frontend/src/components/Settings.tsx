@@ -8,6 +8,7 @@ const Settings: React.FC = () => {
   const [sleepEnd, setSleepEnd] = useState("07:00");
   const [replyToPersonalChats, setReplyToPersonalChats] = useState(true);
   const [replyToGroupChats, setReplyToGroupChats] = useState(false);
+
   const [message, setMessage] = useState("");
   const [original, setOriginal] = useState<any>(null);
 
@@ -22,6 +23,7 @@ const Settings: React.FC = () => {
         setSleepEnd(s.sleepEnd ?? "07:00");
         setReplyToPersonalChats(Boolean(s.replyToPersonalChats ?? true));
         setReplyToGroupChats(Boolean(s.replyToGroupChats ?? false));
+
         setOriginal({
           botEnabled: Boolean(s.botEnabled),
           sleepStart: s.sleepStart ?? "23:00",

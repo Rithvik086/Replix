@@ -11,7 +11,6 @@ import settingsRoutes from "./routes/settings";
 import rulesRoutes from "./routes/rules";
 import Message from './models/Message';
 import { initWhatsApp, getQrCode, getStatus, setSocketIO, sendManualMessage, logoutWhatsApp } from "./whatsapp";
-import { createDefaultRules } from './utils/ruleProcessor';
 
 dotenv.config();
 
@@ -128,8 +127,8 @@ httpServer.listen(PORT, async () => {
         console.error('Failed to create message indexes:', e);
     }
 
-    // Create default rules if none exist
-    await createDefaultRules();
+    // Default rules creation removed - users create rules manually
+    console.log('📋 No automatic rule creation - use dashboard to create rules');
 
     await initWhatsApp();
 });

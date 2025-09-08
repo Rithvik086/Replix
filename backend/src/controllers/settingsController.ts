@@ -30,6 +30,7 @@ export const updateSettings = async (req: Request, res: Response) => {
         s.timezone = payload.timezone ?? s.timezone;
         s.replyToPersonalChats = typeof payload.replyToPersonalChats === 'boolean' ? payload.replyToPersonalChats : s.replyToPersonalChats;
         s.replyToGroupChats = typeof payload.replyToGroupChats === 'boolean' ? payload.replyToGroupChats : s.replyToGroupChats;
+
         await s.save();
         res.json({ success: true, settings: s });
     } catch (err: any) {

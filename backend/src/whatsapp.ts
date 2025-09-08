@@ -1,6 +1,7 @@
 import { Client, LocalAuth, Message } from "whatsapp-web.js";
 import MessageModel from './models/Message';
 import SettingsModel from './models/Settings';
+import { processRules } from './utils/ruleProcessor';
 import qrcode from "qrcode";
 import axios from "axios";
 
@@ -168,16 +169,43 @@ export const initWhatsApp = async () => {
             console.error('Failed to save incoming message:', e);
         }
 
+        // Process message through rules engine
+        const ruleResult = await processRules({
+            body: message.body || '',
+            from: message.from,
+            isGroup: isGroup,
+            timestamp: new Date(message.timestamp * 1000)
+        });
+
         let reply: string | null = null;
-        try {
-            // protect LLM call with timeout
-            const controller = new AbortController();
-            const timeout = setTimeout(() => controller.abort(), 8000);
-            reply = await getAutoReply(message.body, { signal: controller.signal });
-            clearTimeout(timeout);
-        } catch (e: any) {
-            console.error('\u274c LLM call failed or timed out:', e?.message || e);
-            reply = "Sorry, I can't respond right now.";
+
+        if (ruleResult.response) {
+            // Use rule-defined response
+            reply = ruleResult.response;
+            console.log(`📋 Using rule response: ${ruleResult.rule?.name}`);
+        }
+
+        if (ruleResult.useAI) {
+            try {
+                // protect LLM call with timeout
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), 8000);
+                const aiReply = await getAutoReply(message.body, { signal: controller.signal });
+                clearTimeout(timeout);
+
+                if (reply) {
+                    // Combine rule response with AI response
+                    reply = `${reply}\n\n${aiReply}`;
+                } else {
+                    // Use AI response only
+                    reply = aiReply;
+                }
+            } catch (e: any) {
+                console.error('\u274c LLM call failed or timed out:', e?.message || e);
+                if (!reply) {
+                    reply = "Sorry, I can't respond right now.";
+                }
+            }
         }
 
         if (reply && client?.info?.wid) {
