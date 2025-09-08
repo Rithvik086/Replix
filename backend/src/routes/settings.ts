@@ -3,8 +3,8 @@ import { getSettings, updateSettings } from '../controllers/settingsController';
 import { authenticate } from '../middleware/auth';
 
 const router = express.Router();
-
-router.get('/', authenticate, getSettings);
-router.post('/', authenticate, updateSettings);
+router.use(authenticate);
+router.get('/', getSettings);
+router.post('/', updateSettings);
 
 export default router;

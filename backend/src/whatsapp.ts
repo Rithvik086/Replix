@@ -11,8 +11,22 @@ let connectionStatus: "not_connected" | "qr_generated" | "connected" = "not_conn
 // Initialize WhatsApp client
 export const initWhatsApp = async () => {
     client = new Client({
-        authStrategy: new LocalAuth(), // stores session locally
-        puppeteer: { headless: true }
+        authStrategy: new LocalAuth({
+            dataPath: '.wwebjs_auth'
+        }),
+        puppeteer: {
+            headless: true,
+            args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-accelerated-2d-canvas',
+                '--no-first-run',
+                '--no-zygote',
+                '--single-process',
+                '--disable-gpu'
+            ]
+        }
     });
 
     // When QR is received
@@ -138,6 +152,29 @@ export const initWhatsApp = async () => {
     client.on("disconnected", (reason) => {
         console.log("⚠️ WhatsApp disconnected:", reason);
         connectionStatus = "not_connected";
+        qrCode = null; // Clear QR when disconnected
+    });
+
+    // Handle authentication failure
+    client.on("auth_failure", (msg) => {
+        console.error("❌ WhatsApp authentication failed:", msg);
+        connectionStatus = "not_connected";
+        qrCode = null;
+    });
+
+    // Handle loading screen with useful info
+    client.on("loading_screen", (percent, message) => {
+        console.log(`🔄 Loading ${percent}%: ${message}`);
+    });
+
+    // Handle authenticated event
+    client.on("authenticated", () => {
+        console.log("🔐 WhatsApp authenticated successfully");
+    });
+
+    // Handle change_state for debugging
+    client.on("change_state", (state) => {
+        console.log(`🔄 WhatsApp state changed to: ${state}`);
     });
 
     await client.initialize();

@@ -3,10 +3,10 @@ import { getMessages, createMessage, cleanupMessages, setRetention } from '../co
 import { authenticate } from '../middleware/auth';
 
 const router = express.Router();
-
-router.get('/', authenticate, getMessages);
-router.post('/', authenticate, createMessage);
-router.delete('/cleanup', authenticate, cleanupMessages);
-router.post('/retention', authenticate, setRetention);
+router.use(authenticate)
+router.get('/', getMessages);
+router.post('/', createMessage);
+router.delete('/cleanup', cleanupMessages);
+router.post('/retention', setRetention);
 
 export default router;
