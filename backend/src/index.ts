@@ -8,8 +8,10 @@ import connectDB from "./config/database";
 import authRoutes from "./routes/auth";
 import messagesRoutes from "./routes/messages";
 import settingsRoutes from "./routes/settings";
+import rulesRoutes from "./routes/rules";
 import Message from './models/Message';
 import { initWhatsApp, getQrCode, getStatus, setSocketIO, sendManualMessage, logoutWhatsApp } from "./whatsapp";
+import { createDefaultRules } from './utils/ruleProcessor';
 
 dotenv.config();
 
@@ -35,6 +37,7 @@ app.use(cookieParser());
 app.use("/auth", authRoutes);
 app.use("/messages", messagesRoutes);
 app.use("/settings", settingsRoutes);
+app.use("/rules", rulesRoutes);
 
 // Health check
 app.get("/", (_req: Request, res: Response) => {
@@ -124,6 +127,9 @@ httpServer.listen(PORT, async () => {
     } catch (e) {
         console.error('Failed to create message indexes:', e);
     }
+
+    // Create default rules if none exist
+    await createDefaultRules();
 
     await initWhatsApp();
 });
