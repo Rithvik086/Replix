@@ -4,6 +4,8 @@ import SettingsModel from './models/Settings';
 import { processRules } from './utils/ruleProcessor';
 import qrcode from "qrcode";
 import axios from "axios";
+import fs from 'fs';
+import path from 'path';
 
 // Import io from index.ts (will be available after server starts)
 let io: any = null;
@@ -19,9 +21,23 @@ let connectionStatus: "not_connected" | "qr_generated" | "connected" = "not_conn
 
 // Initialize WhatsApp client
 export const initWhatsApp = async () => {
+    // Ensure auth data path exists (so Render persistent disk can be used)
+    const authPath = process.env.WWEBJS_AUTH_PATH || '.wwebjs_auth';
+    try {
+        const resolved = path.resolve(authPath);
+        if (!fs.existsSync(resolved)) {
+            fs.mkdirSync(resolved, { recursive: true });
+            console.log(`🔐 Created WhatsApp auth directory at ${resolved}`);
+        } else {
+            console.log(`🔐 Using WhatsApp auth directory at ${resolved}`);
+        }
+    } catch (e) {
+        console.error('Failed to ensure auth directory exists:', e);
+    }
+
     client = new Client({
         authStrategy: new LocalAuth({
-            dataPath: '.wwebjs_auth'
+            dataPath: process.env.WWEBJS_AUTH_PATH || '.wwebjs_auth'
         }),
         puppeteer: {
             headless: true,
@@ -56,9 +72,41 @@ export const initWhatsApp = async () => {
         }
     });
 
+    // When authenticated (session data available) — detailed debug for auth directory
+    client.on('authenticated', async (session) => {
+        try {
+            console.log('🔐 WhatsApp authenticated successfully');
+            const authPath = process.env.WWEBJS_AUTH_PATH || '.wwebjs_auth';
+            const resolved = path.resolve(authPath);
+
+            if (fs.existsSync(resolved)) {
+                const files = fs.readdirSync(resolved);
+                if (!files || files.length === 0) {
+                    console.log(`🔐 Auth directory (${resolved}) exists but is empty`);
+                } else {
+                    console.log(`🔐 Auth directory (${resolved}) contains ${files.length} file(s):`);
+                    files.forEach((fileName) => {
+                        try {
+                            const filePath = path.join(resolved, fileName);
+                            const stats = fs.statSync(filePath);
+                            console.log(`  - ${fileName} (size: ${stats.size} bytes, mtime: ${stats.mtime.toISOString()})`);
+                        } catch (statErr: any) {
+                            console.log(`  - ${fileName} (failed to stat: ${statErr?.message || statErr})`);
+                        }
+                    });
+                }
+            } else {
+                console.log(`🔐 Auth directory (${resolved}) does not exist`);
+            }
+        } catch (e) {
+            console.error('Error while listing auth directory after authentication:', e);
+        }
+    });
+
+    // Extra logging for disconnects
     // Handle disconnection
     client.on("disconnected", (reason) => {
-        console.log(`❌ WhatsApp disconnected: ${reason}`);
+        console.log(`❌ WhatsApp disconnected: ${reason} at ${new Date().toISOString()}`);
         connectionStatus = "not_connected";
 
         // Emit connection status to frontend
@@ -279,10 +327,7 @@ export const initWhatsApp = async () => {
         console.log(`🔄 Loading ${percent}%: ${message}`);
     });
 
-    // Handle authenticated event
-    client.on("authenticated", () => {
-        console.log("🔐 WhatsApp authenticated successfully");
-    });
+    // ...existing code continues (no duplicate authenticated handler)
 
     // Handle change_state for debugging
     client.on("change_state", (state) => {
@@ -338,7 +383,6 @@ const getAutoReply = async (text: string, options?: { signal?: AbortSignal }) =>
         return "Sorry, I can't respond right now.";
     }
 };
-
 
 
 // Get current QR code (base64)

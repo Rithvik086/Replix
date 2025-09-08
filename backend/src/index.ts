@@ -24,6 +24,7 @@ connectDB();
 const allowedOrigins = [
     "http://localhost:3000",
     "http://localhost:5173",
+    "http://localhost:5174",
     ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : [])
 ].filter(Boolean);
 
@@ -102,6 +103,27 @@ app.post("/whatsapp/logout", async (req: Request, res: Response) => {
     }
 });
 
+// Debug endpoint to inspect WhatsApp auth directory (enable with ENABLE_DEBUG=true)
+if (process.env.ENABLE_DEBUG === 'true') {
+    app.get('/admin/auth-status', async (_req: Request, res: Response) => {
+        try {
+            const authPath = process.env.WWEBJS_AUTH_PATH || '.wwebjs_auth';
+            const resolved = require('path').resolve(authPath);
+            const fs = require('fs');
+            let files: any[] = [];
+            if (fs.existsSync(resolved)) {
+                files = fs.readdirSync(resolved).map((f: string) => {
+                    const st = fs.statSync(require('path').join(resolved, f));
+                    return { name: f, size: st.size, mtime: st.mtime };
+                });
+            }
+            res.json({ ok: true, authPath: resolved, files, uptime: process.uptime() });
+        } catch (e) {
+            res.status(500).json({ ok: false, error: String(e) });
+        }
+    });
+}
+
 // Start server
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
@@ -109,6 +131,7 @@ const io = new Server(httpServer, {
         origin: [
             "http://localhost:3000",
             "http://localhost:5173",
+
             process.env.FRONTEND_URL || ""
         ].filter(url => url && url.length > 0),
         credentials: true
