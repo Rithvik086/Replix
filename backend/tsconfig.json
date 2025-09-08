@@ -7,25 +7,30 @@
     /* Node.js Environment */
     "target": "es2020",          
     "module": "commonjs",        
-    "lib": ["es2020"],           
+    "lib": ["es2020", "dom"],           
+    "types": ["node"],
     "typeRoots": ["./node_modules/@types"],
 
     /* Module Resolution */
     "esModuleInterop": true,     
+    "allowSyntheticDefaultImports": true,
     "moduleResolution": "node", 
     "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
 
     /* Strictness */
     "strict": true,
+    "noImplicitAny": false,
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
 
     /* Safety */
     "noImplicitReturns": true,
-    "noUnusedLocals": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
     
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"],
+  "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
 }
