@@ -145,26 +145,6 @@ const Dashboard: React.FC = () => {
     fetchStatus();
   };
 
-  const resetSession = async () => {
-    try {
-      setActionMsg("Resetting session...");
-      const response = await axiosInstance.post("/reset-session");
-      if (response.data?.success) {
-        setActionMsg("Session reset! New QR should appear soon.");
-        // Fetch new data after reset
-        setTimeout(() => {
-          fetchQrCode();
-          fetchStatus();
-          setActionMsg("");
-        }, 2000);
-      } else {
-        setActionMsg("Failed to reset session");
-      }
-    } catch (err: any) {
-      setActionMsg(err?.response?.data?.message || "Failed to reset session");
-    }
-    setTimeout(() => setActionMsg(""), 5000);
-  };
 
   // retention UI
   const [retentionPreset, setRetentionPreset] = useState<string>("1_day");

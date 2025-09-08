@@ -19,7 +19,7 @@ interface Chat {
 }
 
 const RealTimeChat: React.FC = () => {
-  const [socket, setSocket] = useState<Socket | null>(null);
+  const [, setSocket] = useState<Socket | null>(null);
   const [chats, setChats] = useState<Chat[]>([]);
   const [selectedChat, setSelectedChat] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
