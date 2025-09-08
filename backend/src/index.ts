@@ -9,7 +9,7 @@ import authRoutes from "./routes/auth";
 import messagesRoutes from "./routes/messages";
 import settingsRoutes from "./routes/settings";
 import Message from './models/Message';
-import { initWhatsApp, getQrCode, getStatus, setSocketIO, sendManualMessage } from "./whatsapp";
+import { initWhatsApp, getQrCode, getStatus, setSocketIO, sendManualMessage, logoutWhatsApp } from "./whatsapp";
 
 dotenv.config();
 
@@ -60,7 +60,7 @@ app.get("/status", (_req: Request, res: Response) => {
 app.post("/send-message", async (req: Request, res: Response) => {
     try {
         const { to, message } = req.body;
-        
+
         if (!to || !message) {
             res.status(400).json({ success: false, message: "Missing 'to' or 'message' field" });
             return;
@@ -70,6 +70,16 @@ app.post("/send-message", async (req: Request, res: Response) => {
         res.json({ success: true, data: result });
     } catch (error: any) {
         res.status(500).json({ success: false, message: error.message || "Failed to send message" });
+    }
+});
+
+// Logout WhatsApp session endpoint
+app.post("/whatsapp/logout", async (req: Request, res: Response) => {
+    try {
+        const result = await logoutWhatsApp();
+        res.json(result);
+    } catch (error: any) {
+        res.status(500).json({ success: false, message: error.message || "Failed to logout" });
     }
 });
 
@@ -89,7 +99,7 @@ const io = new Server(httpServer, {
 // Socket.IO connection handling
 io.on('connection', (socket) => {
     console.log('🔌 Client connected:', socket.id);
-    
+
     socket.on('disconnect', () => {
         console.log('🔌 Client disconnected:', socket.id);
     });
@@ -100,10 +110,10 @@ export { io };
 
 httpServer.listen(PORT, async () => {
     console.log(`✅ Server running at http://localhost:${PORT}`);
-    
+
     // Set socket.io instance for whatsapp module
     setSocketIO(io);
-    
+
     // ensure indexes for messages
     try {
         const ttlDays = Number(process.env.MESSAGE_TTL_DAYS ?? 30);

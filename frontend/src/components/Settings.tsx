@@ -53,7 +53,13 @@ const Settings: React.FC = () => {
       });
       if (res.data?.success) {
         setMessage("Saved");
-        setOriginal({ botEnabled, sleepStart, sleepEnd, replyToPersonalChats, replyToGroupChats });
+        setOriginal({
+          botEnabled,
+          sleepStart,
+          sleepEnd,
+          replyToPersonalChats,
+          replyToGroupChats,
+        });
       } else setMessage("Failed to save");
     } catch (err: any) {
       setMessage(err?.response?.data?.message || "Failed to save");
@@ -183,16 +189,22 @@ const Settings: React.FC = () => {
                 </label>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Personal Chats</span>
+                    <span className="text-sm text-gray-600">
+                      Personal Chats
+                    </span>
                     <button
-                      onClick={() => setReplyToPersonalChats(!replyToPersonalChats)}
+                      onClick={() =>
+                        setReplyToPersonalChats(!replyToPersonalChats)
+                      }
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        replyToPersonalChats ? 'bg-indigo-600' : 'bg-gray-200'
+                        replyToPersonalChats ? "bg-indigo-600" : "bg-gray-200"
                       }`}
                     >
                       <span
                         className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          replyToPersonalChats ? 'translate-x-6' : 'translate-x-1'
+                          replyToPersonalChats
+                            ? "translate-x-6"
+                            : "translate-x-1"
                         }`}
                       />
                     </button>
@@ -202,12 +214,12 @@ const Settings: React.FC = () => {
                     <button
                       onClick={() => setReplyToGroupChats(!replyToGroupChats)}
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        replyToGroupChats ? 'bg-indigo-600' : 'bg-gray-200'
+                        replyToGroupChats ? "bg-indigo-600" : "bg-gray-200"
                       }`}
                     >
                       <span
                         className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          replyToGroupChats ? 'translate-x-6' : 'translate-x-1'
+                          replyToGroupChats ? "translate-x-6" : "translate-x-1"
                         }`}
                       />
                     </button>
@@ -280,14 +292,26 @@ const Settings: React.FC = () => {
                   <div className="space-y-1">
                     <div className="flex items-center justify-between text-xs">
                       <span>Personal Chats</span>
-                      <span className={`px-2 py-1 rounded ${replyToPersonalChats ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                        {replyToPersonalChats ? 'Enabled' : 'Disabled'}
+                      <span
+                        className={`px-2 py-1 rounded ${
+                          replyToPersonalChats
+                            ? "bg-green-100 text-green-700"
+                            : "bg-red-100 text-red-700"
+                        }`}
+                      >
+                        {replyToPersonalChats ? "Enabled" : "Disabled"}
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-xs">
                       <span>Group Chats</span>
-                      <span className={`px-2 py-1 rounded ${replyToGroupChats ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                        {replyToGroupChats ? 'Enabled' : 'Disabled'}
+                      <span
+                        className={`px-2 py-1 rounded ${
+                          replyToGroupChats
+                            ? "bg-green-100 text-green-700"
+                            : "bg-red-100 text-red-700"
+                        }`}
+                      >
+                        {replyToGroupChats ? "Enabled" : "Disabled"}
                       </span>
                     </div>
                   </div>

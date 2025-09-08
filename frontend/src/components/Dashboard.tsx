@@ -48,10 +48,24 @@ const Dashboard: React.FC = () => {
       }
     } catch (err) {
       // ignore settings errors (e.g., unauthenticated) but keep state null
-      console.debug("Could not load settings:", err);
-      setBotEnabled(null);
-      setSleepStart(null);
-      setSleepEnd(null);
+    }
+  };
+
+  const logoutWhatsApp = async () => {
+    try {
+      const response = await axiosInstance.post("/whatsapp/logout");
+      if (response.data.success) {
+        setStatus("not_connected");
+        setQrCode(null);
+        // Fetch QR code for reconnection
+        setTimeout(() => fetchQrCode(), 1000);
+      } else {
+        setError(response.data.message || "Failed to logout");
+      }
+    } catch (err: any) {
+      setError(
+        err.response?.data?.message || "Failed to logout WhatsApp session"
+      );
     }
   };
 
@@ -155,7 +169,7 @@ const Dashboard: React.FC = () => {
   // retention UI
   const [retentionPreset, setRetentionPreset] = useState<string>("1_day");
   const [actionMsg, setActionMsg] = useState<string>("");
-  const [activeTab, setActiveTab] = useState<'messages' | 'chat'>('messages');
+  const [activeTab, setActiveTab] = useState<"messages" | "chat">("messages");
   // persona feature removed
 
   const humanLabel = (key: string) => {
@@ -308,6 +322,12 @@ const Dashboard: React.FC = () => {
                     <div className="text-green-600 text-center">
                       <div className="text-5xl">✅</div>
                       <div className="text-sm mt-1 font-medium">Connected</div>
+                      <button
+                        onClick={logoutWhatsApp}
+                        className="mt-2 px-3 py-1 bg-red-50 text-red-600 text-xs rounded-md border border-red-200 hover:bg-red-100 transition-colors"
+                      >
+                        Logout Whatsapp Session
+                      </button>
                     </div>
                   ) : qrCode ? (
                     <img
@@ -369,21 +389,21 @@ const Dashboard: React.FC = () => {
             <div className="bg-white rounded-2xl shadow p-4 border border-gray-100 mb-6">
               <div className="flex space-x-1">
                 <button
-                  onClick={() => setActiveTab('messages')}
+                  onClick={() => setActiveTab("messages")}
                   className={`px-4 py-2 rounded-md text-sm font-medium ${
-                    activeTab === 'messages'
-                      ? 'bg-indigo-100 text-indigo-700'
-                      : 'text-gray-500 hover:text-gray-700'
+                    activeTab === "messages"
+                      ? "bg-indigo-100 text-indigo-700"
+                      : "text-gray-500 hover:text-gray-700"
                   }`}
                 >
                   📋 Message Logs
                 </button>
                 <button
-                  onClick={() => setActiveTab('chat')}
+                  onClick={() => setActiveTab("chat")}
                   className={`px-4 py-2 rounded-md text-sm font-medium ${
-                    activeTab === 'chat'
-                      ? 'bg-indigo-100 text-indigo-700'
-                      : 'text-gray-500 hover:text-gray-700'
+                    activeTab === "chat"
+                      ? "bg-indigo-100 text-indigo-700"
+                      : "text-gray-500 hover:text-gray-700"
                   }`}
                 >
                   💬 Real-Time Chat
@@ -392,7 +412,7 @@ const Dashboard: React.FC = () => {
             </div>
 
             {/* Tab Content */}
-            {activeTab === 'messages' ? <MessagesLog /> : <RealTimeChat />}
+            {activeTab === "messages" ? <MessagesLog /> : <RealTimeChat />}
           </div>
         </div>
       </div>

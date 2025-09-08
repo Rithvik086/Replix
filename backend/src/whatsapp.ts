@@ -48,7 +48,7 @@ export const initWhatsApp = async () => {
     client.on("ready", () => {
         console.log("✅ WhatsApp is connected!");
         connectionStatus = "connected";
-        
+
         // Emit connection status to frontend
         if (io) {
             io.emit('whatsapp:status', { status: connectionStatus });
@@ -59,7 +59,7 @@ export const initWhatsApp = async () => {
     client.on("disconnected", (reason) => {
         console.log(`❌ WhatsApp disconnected: ${reason}`);
         connectionStatus = "not_connected";
-        
+
         // Emit connection status to frontend
         if (io) {
             io.emit('whatsapp:status', { status: connectionStatus, reason });
@@ -70,7 +70,7 @@ export const initWhatsApp = async () => {
     client.on("auth_failure", (message) => {
         console.error(`🚫 WhatsApp authentication failed: ${message}`);
         connectionStatus = "not_connected";
-        
+
         // Emit connection status to frontend
         if (io) {
             io.emit('whatsapp:status', { status: connectionStatus, error: message });
@@ -151,7 +151,7 @@ export const initWhatsApp = async () => {
                 direction: 'in'
             });
             console.log('[DB] whatsapp saved incoming message', { id: savedIn._id });
-            
+
             // Emit real-time event for new message
             if (io) {
                 io.emit('message:new', {
@@ -198,7 +198,7 @@ export const initWhatsApp = async () => {
                         direction: 'out'
                     });
                     console.log('[DB] whatsapp saved outgoing reply', { id: savedOut._id });
-                    
+
                     // Emit real-time event for bot reply
                     if (io) {
                         io.emit('message:new', {
@@ -216,12 +216,12 @@ export const initWhatsApp = async () => {
                 }
             } catch (e: any) {
                 console.error('Failed to send reply:', e);
-                
+
                 // Handle session closed errors
                 if (e.message && (e.message.includes('Session closed') || e.message.includes('Protocol error'))) {
                     console.log('🔄 WhatsApp session closed during message reply, updating connection status');
                     connectionStatus = "not_connected";
-                    
+
                     // Emit connection status update
                     if (io) {
                         io.emit('whatsapp:status', { status: connectionStatus });
@@ -319,6 +319,44 @@ export const getQrCode = () => qrCode;
 // Get connection status
 export const getStatus = () => connectionStatus;
 
+// Logout from WhatsApp session
+export const logoutWhatsApp = async () => {
+    try {
+        if (!client) {
+            console.log('⚠️ No WhatsApp client to logout');
+            return { success: false, message: "No active session to logout" };
+        }
+
+        console.log('🚪 Logging out WhatsApp session...');
+
+        // Logout from WhatsApp Web
+        await client.logout();
+
+        // Update connection status
+        connectionStatus = "not_connected";
+
+        // Emit connection status update
+        if (io) {
+            io.emit('whatsapp:status', { status: connectionStatus, reason: 'Manual logout' });
+        }
+
+        console.log('✅ WhatsApp session logged out successfully');
+        return { success: true, message: "Successfully logged out from WhatsApp" };
+
+    } catch (error: any) {
+        console.error('❌ Failed to logout WhatsApp session:', error);
+
+        // Even if logout fails, update status as disconnected
+        connectionStatus = "not_connected";
+
+        if (io) {
+            io.emit('whatsapp:status', { status: connectionStatus, reason: 'Logout error' });
+        }
+
+        return { success: false, message: error.message || "Failed to logout" };
+    }
+};
+
 // Send manual message from dashboard
 export const sendManualMessage = async (to: string, message: string) => {
     try {
@@ -329,7 +367,7 @@ export const sendManualMessage = async (to: string, message: string) => {
         // Check if client is ready and connection is valid
         const clientState = await client.getState();
         console.log(`📊 Current WhatsApp client state: ${clientState}`);
-        
+
         if (clientState !== 'CONNECTED') {
             connectionStatus = "not_connected";
             throw new Error(`WhatsApp client not ready. Current state: ${clientState}`);
@@ -365,18 +403,18 @@ export const sendManualMessage = async (to: string, message: string) => {
         return { success: true, message: savedMessage };
     } catch (error: any) {
         console.error('Failed to send manual message:', error);
-        
+
         // Handle session closed errors specifically
         if (error.message && (error.message.includes('Session closed') || error.message.includes('Protocol error'))) {
             console.log('🔄 WhatsApp session closed, updating connection status');
             connectionStatus = "not_connected";
-            
+
             // Emit connection status update
             if (io) {
                 io.emit('whatsapp:status', { status: connectionStatus });
             }
         }
-        
+
         throw error;
     }
 };
