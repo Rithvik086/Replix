@@ -139,3 +139,9 @@ VITE_API_BASE_URL=http://localhost:5000
 # Optional: analytics / error monitoring
 # VITE_SENTRY_DSN=
 ```
+![screenshot 1](images/s1.png)
+![screenshot 1](images/s2.png)
+![screenshot 1](images/s3.png)
+![screenshot 1](images/s4.png)
+
+
